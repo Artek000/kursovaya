@@ -1,4 +1,5 @@
 #include "Main.h"
+#include "Enter_f.h"
 
 using namespace System;
 using namespace System::Windows::Forms;

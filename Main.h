@@ -1,5 +1,8 @@
 #include <string>
 #include <vector>
+#include <sstream>
+#include <windows.h>
+#include "Enter_f.h"
 #pragma once
 
 namespace Kursovaya {
@@ -12,14 +15,16 @@ namespace Kursovaya {
 	using namespace System::Drawing;
 	using namespace std;
 
-	int Stars;
-	int TypeHome;
-	int costMin;
-	int costMax;
+	int Stars = -1;
+	string TypeHome = "";
+	int costMin = -1;
+	int costMax = -1;
+	int col_click = 0;
+
 
 	struct hotel_S
 	{
-		string stars, type, name, cost;
+		string stars, type, name; int cost;
 	};
 	vector<hotel_S> vHotels;
 
@@ -69,6 +74,7 @@ namespace Kursovaya {
 	private: System::Windows::Forms::Label^ label5;
 	private: System::Windows::Forms::TextBox^ costMaxBox;
 	private: System::Windows::Forms::Button^ bAppend;
+	private: System::Windows::Forms::ListViewItem^ listViewItem;
 	private: System::Windows::Forms::ListView^ listHotels;
 
 	private: System::Windows::Forms::ColumnHeader^ colHeader_stars;
@@ -76,6 +82,8 @@ namespace Kursovaya {
 	private: System::Windows::Forms::ColumnHeader^ colHeader_name;
 	private: System::Windows::Forms::ColumnHeader^ colHeader_cost;
 	private: System::Windows::Forms::Button^ bFind;
+	private: System::Windows::Forms::Button^ auth_btn;
+
 
 
 
@@ -94,14 +102,6 @@ namespace Kursovaya {
 
 		void InitializeComponent(void)
 		{
-			System::Windows::Forms::ListViewItem^ listViewItem1 = (gcnew System::Windows::Forms::ListViewItem(gcnew cli::array< System::String^  >(4) {
-				L"5",
-					L"для семьи", L"Reagrd Hotel 5 Stars", L"2500"
-			}, -1));
-			System::Windows::Forms::ListViewItem^ listViewItem2 = (gcnew System::Windows::Forms::ListViewItem(gcnew cli::array< System::String^  >(4) {
-				L"1",
-					L"2", L"3", L"4"
-			}, -1));
 			this->label1 = (gcnew System::Windows::Forms::Label());
 			this->zaprText = (gcnew System::Windows::Forms::TextBox());
 			this->starsBox = (gcnew System::Windows::Forms::ComboBox());
@@ -119,6 +119,7 @@ namespace Kursovaya {
 			this->colHeader_name = (gcnew System::Windows::Forms::ColumnHeader());
 			this->colHeader_cost = (gcnew System::Windows::Forms::ColumnHeader());
 			this->bFind = (gcnew System::Windows::Forms::Button());
+			this->auth_btn = (gcnew System::Windows::Forms::Button());
 			this->SuspendLayout();
 			// 
 			// label1
@@ -136,7 +137,6 @@ namespace Kursovaya {
 			this->zaprText->Name = L"zaprText";
 			this->zaprText->Size = System::Drawing::Size(551, 20);
 			this->zaprText->TabIndex = 20;
-			this->zaprText->TextChanged += gcnew System::EventHandler(this, &Main::ZaprText_TextChanged);
 			// 
 			// starsBox
 			// 
@@ -230,7 +230,6 @@ namespace Kursovaya {
 					this->colHeader_type, this->colHeader_name, this->colHeader_cost
 			});
 			this->listHotels->FullRowSelect = true;
-			this->listHotels->Items->AddRange(gcnew cli::array< System::Windows::Forms::ListViewItem^  >(2) { listViewItem1, listViewItem2 });
 			this->listHotels->Location = System::Drawing::Point(160, 53);
 			this->listHotels->MultiSelect = false;
 			this->listHotels->Name = L"listHotels";
@@ -238,10 +237,11 @@ namespace Kursovaya {
 			this->listHotels->TabIndex = 22;
 			this->listHotels->UseCompatibleStateImageBehavior = false;
 			this->listHotels->View = System::Windows::Forms::View::Details;
+			this->listHotels->ColumnClick += gcnew System::Windows::Forms::ColumnClickEventHandler(this, &Main::ListHotels_ColumnClick);
 			// 
 			// colHeader_stars
 			// 
-			this->colHeader_stars->Text = L"Рейтинг";
+			this->colHeader_stars->Text = L"Звёзд";
 			// 
 			// colHeader_type
 			// 
@@ -270,12 +270,23 @@ namespace Kursovaya {
 			this->bFind->Text = L"Поиск";
 			this->bFind->UseVisualStyleBackColor = true;
 			// 
+			// auth_btn
+			// 
+			this->auth_btn->Location = System::Drawing::Point(870, 344);
+			this->auth_btn->Name = L"auth_btn";
+			this->auth_btn->Size = System::Drawing::Size(75, 23);
+			this->auth_btn->TabIndex = 24;
+			this->auth_btn->Text = L"Вход";
+			this->auth_btn->UseVisualStyleBackColor = true;
+			this->auth_btn->Click += gcnew System::EventHandler(this, &Main::Auth_btn_Click);
+			// 
 			// Main
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->BackColor = System::Drawing::Color::LightGoldenrodYellow;
-			this->ClientSize = System::Drawing::Size(919, 492);
+			this->ClientSize = System::Drawing::Size(957, 379);
+			this->Controls->Add(this->auth_btn);
 			this->Controls->Add(this->bFind);
 			this->Controls->Add(this->listHotels);
 			this->Controls->Add(this->bAppend);
@@ -291,6 +302,7 @@ namespace Kursovaya {
 			this->Controls->Add(this->label1);
 			this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedSingle;
 			this->Name = L"Main";
+			this->StartPosition = System::Windows::Forms::FormStartPosition::CenterScreen;
 			this->Text = L"Hotel Booking";
 			this->Load += gcnew System::EventHandler(this, &Main::Main_Load);
 			this->ResumeLayout(false);
@@ -298,19 +310,100 @@ namespace Kursovaya {
 
 		}
 #pragma endregion
-	private: System::Void addHotel(std::string stars, std::string type, std::string name, std::string cost) {
+
+	ref class ListViewItemComparer : public IComparer
+	{
+		private:
+			int col;
+
+		public:
+			ListViewItemComparer()
+			{
+				col = 0;
+			}
+
+			ListViewItemComparer(int column)
+			{
+				col = column;
+			}
+
+			virtual int Compare(Object^ x, Object^ y)
+			{
+				return String::Compare((dynamic_cast<ListViewItem^>(x))->SubItems[col]->Text,
+					(dynamic_cast<ListViewItem^>(y))->SubItems[col]->Text);
+			}
+	};
+
+	ref class ListViewItemComparerBack : public IComparer
+	{
+	private:
+		int col;
+
+	public:
+		ListViewItemComparerBack()
+		{
+			col = 0;
+		}
+
+		ListViewItemComparerBack(int column)
+		{
+			col = column;
+		}
+
+		virtual int Compare(Object^ y, Object^ x)
+		{
+			return String::Compare((dynamic_cast<ListViewItem^>(x))->SubItems[col]->Text,
+				(dynamic_cast<ListViewItem^>(y))->SubItems[col]->Text);
+		}
+	};
+
+	string removeSpaces(string input)
+	{
+		int length = input.length();
+		for (int i = 0; i < length; i++) {
+			if (input[i] == ' ')
+			{
+				input.erase(i, 1);
+				length--;
+				i--;
+			}
+		}
+		return input;
+	}
+
+	private: System::Void addHotel(std::string stars, std::string type, std::string name, int cost) {
 			vHotels.emplace_back(hotel_S{ stars,type,name,cost });
 	}
-
-	private: System::Void addItem() {
-		
-	}
 	private: System::Void Main_Load(System::Object^ sender, System::EventArgs^ e) {
-		addHotel("4", "для двоих", "Yamaika hotel star", "4280");
-		
-	}
+		addHotel("2", "для двоих", "Hotel Pennsylvania", 11045);
+		addHotel("4", "для одного", "Hotel on Rivington", 14532);
+		addHotel("1", "для двоих", "U.S. Pacific Hotel", 8415);
+		addHotel("5", "для троих", "Yamaika hotel", 8294);
+		addHotel("4", "для двоих", "Pod Times Square", 12207);
+		addHotel("1", "для одного", "World Hotel", 4069);
+		addHotel("4", "для троих", "Aliz Hotel Times Square", 21637);
+		addHotel("5", "для двоих", "Lord & Moris - Times Square Hotel", 18666);
+		addHotel("1", "для одного", "Central Park West Hostel", 3875);	
+		addHotel("3", "Семейный", "Riverside Tower Hotel", 11626);
+		addHotel("2", "Семейный", "St Marks Hotel", 9934);
 
-		
+		for (int i = 0; i < vHotels.size(); i++) {
+			string pN = vHotels.at(i).name;
+			String^ sS_name = gcnew String(pN.c_str());
+			string pS = vHotels.at(i).stars;
+			String^ sS_stars = gcnew String(pS.c_str());
+			string pT = vHotels.at(i).type;
+			String^ sS_type = gcnew String(pT.c_str());
+			int pC = vHotels.at(i).cost;
+			String^ sS_cost = gcnew String(Convert::ToString(pC));
+
+			listViewItem = gcnew Windows::Forms::ListViewItem(sS_stars);
+			listViewItem->SubItems->Add(sS_type);
+			listViewItem->SubItems->Add(sS_name);
+			listViewItem->SubItems->Add(sS_cost);
+			this->listHotels->Items->Add(this->listViewItem);
+		}
+	}	
 	private: System::Void StarsBox_SelectedIndexChanged(System::Object^ sender, System::EventArgs^ e) {
 		switch (starsBox->SelectedIndex)
 		{
@@ -324,29 +417,99 @@ namespace Kursovaya {
 private: System::Void TypeBox_SelectedIndexChanged(System::Object^ sender, System::EventArgs^ e) {
 	switch (typeBox->SelectedIndex)
 	{
-	case 0: TypeHome = 1; break;
-	case 1: TypeHome = 2; break;
-	case 2: TypeHome = 3; break;
-	case 3: TypeHome = 4; break;
+	case 0: TypeHome = "для одного"; break;
+	case 1: TypeHome = "для двоих"; break;
+	case 2: TypeHome = "для троих"; break;
+	case 3: TypeHome = "Семейный"; break;
 	}
 }
 private: System::Void CostMinBox_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-	costMin = Convert::ToInt16(costMinBox->Text);
+	costMin = Convert::ToInt64(costMinBox->Text);
 }
 private: System::Void CostMaxBox_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-	costMax = Convert::ToInt16(costMaxBox->Text);
-}
-
-
-private: System::Void ZaprText_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-	
+	costMax = Convert::ToInt64(costMaxBox->Text);
 }
 private: System::Void BAppend_Click(System::Object^ sender, System::EventArgs^ e) {
-	/* zaprText->AppendText(Convert::ToString(Stars));
-	zaprText->AppendText(Convert::ToString(TypeHome));
-	zaprText->AppendText(Convert::ToString(costMin));
-	zaprText->AppendText(Convert::ToString(costMax)); */
 
+	vector<hotel_S> sortedHotels;
+
+	for (int i = 0; i < vHotels.size(); i++) {
+		string stars = vHotels.at(i).stars;
+		int f_stars;
+		istringstream iss(stars);
+		iss >> f_stars;
+
+		string f_type = vHotels.at(i).type;
+		int cost = vHotels.at(i).cost;
+		int f_cost;
+		istringstream iss2(cost);
+		iss2 >> f_cost;
+
+		if (Stars != -1 && TypeHome != "" && costMax != -1 && costMin != -1){
+			if (Stars == f_stars && TypeHome == f_type && costMax >= f_cost && f_cost >= costMin) {
+				listHotels->Items->Clear();
+				sortedHotels.emplace_back(vHotels.at(i));
+			}
+		}else if (Stars != -1 && TypeHome != "" && costMin != -1){
+			if (Stars == f_stars && TypeHome == f_type && f_cost >= costMin) {
+				listHotels->Items->Clear();
+				sortedHotels.emplace_back(vHotels.at(i));
+			}
+		}else if (Stars != -1 && TypeHome != "" && costMax != -1) {
+			if (Stars == f_stars && TypeHome == f_type && f_cost <= costMax) {
+				listHotels->Items->Clear();
+				sortedHotels.emplace_back(vHotels.at(i));
+			}
+		}else if (Stars != -1 && TypeHome != ""){
+			if (Stars == f_stars && TypeHome == f_type) {
+				listHotels->Items->Clear();
+				sortedHotels.emplace_back(vHotels.at(i));
+			}
+		}else if (Stars != -1){
+			if (Stars == f_stars) {
+				listHotels->Items->Clear();
+				sortedHotels.emplace_back(vHotels.at(i));
+			}
+		}else{
+			MessageBox::Show("Введите правильные параметры");
+			break;
+		}
+	}
+	
+	for (int i = 0; i < sortedHotels.size(); i++) {
+		string pN = sortedHotels.at(i).name;
+		String^ sS_name = gcnew String(pN.c_str());
+		string pS = sortedHotels.at(i).stars;
+		String^ sS_stars = gcnew String(pS.c_str());
+		string pT = sortedHotels.at(i).type;
+		String^ sS_type = gcnew String(pT.c_str());
+		int pC = sortedHotels.at(i).cost;
+		String^ sS_cost = gcnew String(Convert::ToString(pC));
+
+		listViewItem = gcnew Windows::Forms::ListViewItem(sS_stars);
+		listViewItem->SubItems->Add(sS_type);
+		listViewItem->SubItems->Add(sS_name);
+		listViewItem->SubItems->Add(sS_cost);
+		this->listHotels->Items->Add(this->listViewItem);
+	}
+
+}
+private: System::Void ListHotels_ColumnClick(System::Object^ sender, System::Windows::Forms::ColumnClickEventArgs^ e) {
+
+	if (e->Empty && col_click == 0)
+	{
+		listHotels->ListViewItemSorter = gcnew ListViewItemComparer(e->Column);
+		col_click = 1;
+	}
+	else if(e->Empty && col_click == 1)
+	{
+		listHotels->ListViewItemSorter = gcnew ListViewItemComparerBack(e->Column);
+		col_click = 0;
+	}
+}
+private: System::Void Auth_btn_Click(System::Object^ sender, System::EventArgs^ e) {
+	Enter_f^ enterForm = gcnew Enter_f;
+	enterForm->ShowDialog();
 }
 };
 }
