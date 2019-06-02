@@ -1,3 +1,5 @@
+#include <string>
+#include <msclr\marshal_cppstd.h>
 #pragma once
 
 namespace Kursovaya {
@@ -8,6 +10,8 @@ namespace Kursovaya {
 	using namespace System::Windows::Forms;
 	using namespace System::Data;
 	using namespace System::Drawing;
+	using namespace msclr::interop;
+	using namespace std;
 
 	/// <summary>
 	/// Сводка для Enter_f
@@ -23,6 +27,7 @@ namespace Kursovaya {
 			//
 		}
 
+
 	protected:
 		/// <summary>
 		/// Освободить все используемые ресурсы.
@@ -37,9 +42,11 @@ namespace Kursovaya {
 	private: System::Windows::Forms::Label^ label1;
 	protected:
 	private: System::Windows::Forms::Label^ label2;
-	private: System::Windows::Forms::TextBox^ textBox1;
-	private: System::Windows::Forms::TextBox^ textBox2;
-	private: System::Windows::Forms::Button^ button1;
+	public: System::Windows::Forms::TextBox^ loginBox;
+	public: System::Windows::Forms::TextBox^ passBox;
+	private: System::Windows::Forms::Button^ acceptBtn;
+	public:
+
 
 	protected:
 
@@ -64,9 +71,9 @@ namespace Kursovaya {
 		{
 			this->label1 = (gcnew System::Windows::Forms::Label());
 			this->label2 = (gcnew System::Windows::Forms::Label());
-			this->textBox1 = (gcnew System::Windows::Forms::TextBox());
-			this->textBox2 = (gcnew System::Windows::Forms::TextBox());
-			this->button1 = (gcnew System::Windows::Forms::Button());
+			this->loginBox = (gcnew System::Windows::Forms::TextBox());
+			this->passBox = (gcnew System::Windows::Forms::TextBox());
+			this->acceptBtn = (gcnew System::Windows::Forms::Button());
 			this->SuspendLayout();
 			// 
 			// label1
@@ -87,30 +94,30 @@ namespace Kursovaya {
 			this->label2->TabIndex = 1;
 			this->label2->Text = L"Пароль";
 			// 
-			// textBox1
+			// loginBox
 			// 
-			this->textBox1->Location = System::Drawing::Point(92, 41);
-			this->textBox1->Name = L"textBox1";
-			this->textBox1->Size = System::Drawing::Size(100, 20);
-			this->textBox1->TabIndex = 2;
+			this->loginBox->Location = System::Drawing::Point(92, 41);
+			this->loginBox->Name = L"loginBox";
+			this->loginBox->Size = System::Drawing::Size(100, 20);
+			this->loginBox->TabIndex = 2;
 			// 
-			// textBox2
+			// passBox
 			// 
-			this->textBox2->Location = System::Drawing::Point(92, 100);
-			this->textBox2->Name = L"textBox2";
-			this->textBox2->Size = System::Drawing::Size(100, 20);
-			this->textBox2->TabIndex = 3;
-			this->textBox2->UseSystemPasswordChar = true;
+			this->passBox->Location = System::Drawing::Point(92, 100);
+			this->passBox->Name = L"passBox";
+			this->passBox->Size = System::Drawing::Size(100, 20);
+			this->passBox->TabIndex = 3;
+			this->passBox->UseSystemPasswordChar = true;
 			// 
-			// button1
+			// acceptBtn
 			// 
-			this->button1->Location = System::Drawing::Point(107, 152);
-			this->button1->Name = L"button1";
-			this->button1->Size = System::Drawing::Size(75, 23);
-			this->button1->TabIndex = 4;
-			this->button1->Text = L"button1";
-			this->button1->UseVisualStyleBackColor = true;
-			this->button1->Click += gcnew System::EventHandler(this, &Enter_f::Button1_Click);
+			this->acceptBtn->Location = System::Drawing::Point(107, 152);
+			this->acceptBtn->Name = L"acceptBtn";
+			this->acceptBtn->Size = System::Drawing::Size(75, 23);
+			this->acceptBtn->TabIndex = 4;
+			this->acceptBtn->Text = L"Войти";
+			this->acceptBtn->UseVisualStyleBackColor = true;
+			this->acceptBtn->Click += gcnew System::EventHandler(this, &Enter_f::AcceptBtn_Click);
 			// 
 			// Enter_f
 			// 
@@ -118,9 +125,9 @@ namespace Kursovaya {
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->BackColor = System::Drawing::SystemColors::ButtonFace;
 			this->ClientSize = System::Drawing::Size(285, 216);
-			this->Controls->Add(this->button1);
-			this->Controls->Add(this->textBox2);
-			this->Controls->Add(this->textBox1);
+			this->Controls->Add(this->acceptBtn);
+			this->Controls->Add(this->passBox);
+			this->Controls->Add(this->loginBox);
 			this->Controls->Add(this->label2);
 			this->Controls->Add(this->label1);
 			this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedSingle;
@@ -132,8 +139,7 @@ namespace Kursovaya {
 
 		}
 #pragma endregion
-	private: System::Void Button1_Click(System::Object^ sender, System::EventArgs^ e) {
-		
+	private: System::Void AcceptBtn_Click(System::Object^ sender, System::EventArgs^ e) {
 		Enter_f::Hide();
 	}
 };
